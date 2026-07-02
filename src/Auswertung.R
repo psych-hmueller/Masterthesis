@@ -3,7 +3,7 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 #Packages laden
 #install.packages("car")
-library (car)
+library(car)
 #install.packages("emmeans")
 library(emmeans)
 #install.packages("dplyr")
@@ -277,7 +277,7 @@ predict_df$contrast_label <- factor(predict_df$contrast_cond,
                                 labels = c("Offset", "Onset"))
 predict_df$stim_label <- factor(predict_df$stim,
                                     levels = c(1, 2, 3),
-                                    labels = c("Active", "Passive", "Fixation"))
+                                    labels = c("Active", "Passive", "Static"))
 
 #Plot: vorhergesagte prop_corr getrennt für jede Bedingung für Onset und Offset
 plot_1 <- ggplot(predict_df, aes(x = delay_original, y = prob, color = contrast_label)) +
@@ -286,7 +286,7 @@ plot_1 <- ggplot(predict_df, aes(x = delay_original, y = prob, color = contrast_
   geom_errorbar(aes(ymin = lwr, ymax = upr),
                 width = 3, linewidth = 0.5)+
   scale_color_manual(values = c("Offset" = "hotpink", "Onset" = "orange")) +
-  coord_cartesian(ylim = c(NA, 1.2))+
+  coord_cartesian(ylim = c(NA, 1.01))+
   facet_wrap(~ stim_label) +
   labs(x = "Change Asynchrony (ms)",
        y = "Proportion Correct",
@@ -298,7 +298,7 @@ plot_1 <- ggplot(predict_df, aes(x = delay_original, y = prob, color = contrast_
         legend.title = element_text(size = 12),
         legend.text = element_text(size = 12))
 
-#ggsave("OnsetOffset_proBedingung.png", width = 12, height = 8)
+#ggsave("OnsetOffset_proBedingung.png", width = 600, height = 400, units = "mm")
 
 #ab hier für Plot_2 der Differenzen von Onset und Offset
 
@@ -326,9 +326,9 @@ plot_2 <- ggplot(predict_wide_con, aes(x = delay_original, y = diff, color = sti
   geom_errorbar(aes(ymin = diff_lwr, ymax = diff_upr),
                 width = 3, linewidth = 0.5)+
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey50")+
- scale_color_manual(values = c("Active" = "lightblue",
-                                "Passive" = "purple",
-                                "Fixation" = "darkred")) +
+ scale_color_manual(values = c("Active" = "seagreen2",
+                                "Passive" = "dodgerblue1",
+                                "Static" = "red2")) +
   labs(x = "Change Asynchrony (ms)",
        y = "Proportion Correct (Offset-Onset)",
        color = "Condition") +
@@ -351,39 +351,39 @@ predict_wide_stim <- predict_df %>%
 
 #Differenzen berechnen
 predict_wide_stim$diff_ActPass <- predict_wide_stim$prob_Active - predict_wide_stim$prob_Passive
-predict_wide_stim$diff_ActFix <- predict_wide_stim$prob_Active - predict_wide_stim$prob_Fixation
-predict_wide_stim$diff_PassFix <- predict_wide_stim$prob_Passive - predict_wide_stim$prob_Fixation
+predict_wide_stim$diff_ActStat <- predict_wide_stim$prob_Active - predict_wide_stim$prob_Static
+predict_wide_stim$diff_PassStat <- predict_wide_stim$prob_Passive - predict_wide_stim$prob_Static
 
 #KI der Differenzen berechnen
 predict_wide_stim$se_ActPass <- sqrt(predict_wide_stim$se_Active^2 + predict_wide_stim$se_Passive^2)
-predict_wide_stim$se_ActFix <- sqrt(predict_wide_stim$se_Active^2 + predict_wide_stim$se_Fixation^2)
-predict_wide_stim$se_PassFix <- sqrt(predict_wide_stim$se_Passive^2 + predict_wide_stim$se_Fixation^2)
+predict_wide_stim$se_ActStat <- sqrt(predict_wide_stim$se_Active^2 + predict_wide_stim$se_Static^2)
+predict_wide_stim$se_PassStat <- sqrt(predict_wide_stim$se_Passive^2 + predict_wide_stim$se_Static^2)
 
 predict_wide_stim$lwr_ActPass <- predict_wide_stim$diff_ActPass - 1.96 * predict_wide_stim$se_ActPass
 predict_wide_stim$upr_ActPass <- predict_wide_stim$diff_ActPass + 1.96 * predict_wide_stim$se_ActPass
 
-predict_wide_stim$lwr_ActFix <- predict_wide_stim$diff_ActFix - 1.96 * predict_wide_stim$se_ActFix
-predict_wide_stim$upr_ActFix <- predict_wide_stim$diff_ActFix + 1.96 * predict_wide_stim$se_ActFix
+predict_wide_stim$lwr_ActStat <- predict_wide_stim$diff_ActStat - 1.96 * predict_wide_stim$se_ActStat
+predict_wide_stim$upr_ActStat <- predict_wide_stim$diff_ActStat + 1.96 * predict_wide_stim$se_ActStat
 
-predict_wide_stim$lwr_PassFix <- predict_wide_stim$diff_PassFix - 1.96 * predict_wide_stim$se_PassFix
-predict_wide_stim$upr_PassFix <- predict_wide_stim$diff_PassFix + 1.96 * predict_wide_stim$se_PassFix
+predict_wide_stim$lwr_PassStat <- predict_wide_stim$diff_PassStat - 1.96 * predict_wide_stim$se_PassStat
+predict_wide_stim$upr_PassStat <- predict_wide_stim$diff_PassStat + 1.96 * predict_wide_stim$se_PassStat
 
 #Für ggplot in Longformat überführen
 predict_long_stim <- predict_wide_stim %>%
   select(delay_original, contrast_label,
          diff_ActPass, lwr_ActPass, upr_ActPass,
-         diff_ActFix, lwr_ActFix, upr_ActFix,
-         diff_PassFix, lwr_PassFix, upr_PassFix) %>%
+         diff_ActStat, lwr_ActStat, upr_ActStat,
+         diff_PassStat, lwr_PassStat, upr_PassStat) %>%
   pivot_longer(cols = -c(delay_original, contrast_label),
                names_to = c(".value", "comparison"),
                names_pattern = "(diff|lwr|upr)_(.*)")
 
 #Labels für Subplots
 predict_long_stim$comparison <- factor(predict_long_stim$comparison,
-                                       levels = c("ActPass", "ActFix", "PassFix"),
+                                       levels = c("ActPass", "ActStat", "PassStat"),
                                        labels = c("Active - Passive",
-                                                  "Active - Fixation",
-                                                  "Passive - Fixation"))
+                                                  "Active - Static",
+                                                  "Passive - Static"))
 
 #Plot3: Differenzen der Bedingungen für Onset und Offset getrennt
 plot_3 <- ggplot(predict_long_stim, aes(x = delay_original, y = diff, color = contrast_label)) +
